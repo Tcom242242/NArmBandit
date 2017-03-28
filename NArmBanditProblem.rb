@@ -34,7 +34,7 @@ class NArmBanditProblem
       when "exp" then
       when "random" then
         @value = rand()
-        p "lever value : "+@value.to_s
+        # p "lever value : "+@value.to_s
       end
     end
 
@@ -102,7 +102,7 @@ end
 if($0 == __FILE__) then
 
   bandit_conf = {}
-  bandit_conf[:arm_num] = 5 
+  bandit_conf[:arm_num] = 10
   bandit = NArmBanditProblem.new(bandit_conf)
 
   agent_list = [] 
@@ -120,15 +120,21 @@ if($0 == __FILE__) then
   agent2_conf[:a] = 0.1 
   agent2 = BanditAgent.new(agent2_conf, bandit.arms.length) 
   agent_list.push(agent2) 
- 
-  exp_num = 5000 
+
+  agent3_conf = {} 
+  agent3_conf[:selection_method] = "ucb" 
+  agent3_conf[:c] = 1 
+  agent3_conf[:a] = 0.1 
+  agent3 = BanditAgent.new(agent3_conf, bandit.arms.length) 
+  agent_list.push(agent3) 
+  exp_num = 10000 
   
   rewards_list = [] 
 
   exp_num.times do |num|
     agent_list.each_with_index do |agent, i|
       rewards_list[i] = [] if rewards_list[i].nil?
-      agent_select = agent.select_action
+      agent_select = agent.select_action(num)
       reward = bandit.pull_lever(agent_select) 
       agent.calc_average_reward(reward,num) 
       agent.update_q(agent_select,reward) 
@@ -138,8 +144,9 @@ if($0 == __FILE__) then
   end
   
   p "=============[result]============="
-  p "agent1's average reward : #{agent1.average_reward}"
-  p "agent2's average reward : #{agent2.average_reward}"
+  p "agent1's average reward (e_greedy): #{agent1.average_reward}"
+  p "agent2's average reward (softmax) : #{agent2.average_reward}"
+  p "agent3's average reward (ucb)     : #{agent3.average_reward}"
 
   YAML.dump(rewards_list, File.open("result.yml", "w"))
 end

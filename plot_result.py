@@ -29,10 +29,11 @@ data = np.array(data)
 
 plt.plot(data[0], label = "e_greedy epsilon=0.1")
 plt.plot(data[1], label = "softmax T=0.1")
+plt.plot(data[2], label = "ucb")
 plt.legend(loc="lower right")
 plt.xlabel("cycle")
 plt.ylabel("average reward")
 plt.show()
-plt.savefig("result.png")
+plt.savefig("result.jpg")
 
 

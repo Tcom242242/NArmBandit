@@ -21,6 +21,10 @@ class BanditAgent < Agent
     @selection_method = conf[:selection_method]
     @e = conf[:e] if @selection_method == "e_greedy"
     @t = conf[:t] if @selection_method == "softmax"
+    if @selection_method == "ucb"
+      @c = conf[:c] 
+      @select_num = []
+    end
   end
   
   def make_default_conf
@@ -29,7 +33,6 @@ class BanditAgent < Agent
     conf[:t] = 0.1 
     conf[:id] = 0 
     conf[:a] = 0.1 
-
   end
    
   #
@@ -52,11 +55,13 @@ class BanditAgent < Agent
    q_table[q_id].r = @a*reward + (1-@a)*q_table[q_id].r
   end 
 
-  def select_action
+  def select_action(cycle=nil)
     if @selection_method == "e_greedy" 
       e_greedy
     elsif @selection_method == "softmax"
       softmax
+    elsif @selection_method == "ucb"
+      ucb(cycle)
     end
   end
 
@@ -93,6 +98,32 @@ class BanditAgent < Agent
     end
     return nil    #プログラムに問題あり 
   end 
+
+  #
+  # == UCB
+  #
+  def ucb(cycle_num)
+    select_action = nil
+    # if there is a lever which isnt selected by agent one time
+    q_table.each_with_index { |q, i|
+       if @select_num[i].nil? 
+         @select_num[i] = 1
+         select_action = i
+       end
+    }
+    return select_action if !select_action.nil?
+
+    ucb_value = []
+    # calc the value of ucb by each lever
+    q_table.each_with_index { |q, i|
+      ucb_value[i] = q.r + @c * Math.sqrt(Math.log(cycle_num)/@select_num[i])
+    }
+
+    # select the lever which is highest value in all levers 
+    select_action = ucb_value.index(ucb_value.max)
+    @select_num[select_action] += 1
+    return select_action #return max value of ucb_values
+  end
 
   #
   # === ソフトマックス法の分母を求めるメソッド
